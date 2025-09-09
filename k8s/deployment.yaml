@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ai-image-generator
-        image: gcr.io/ai-on-gke-image-generator/ai-image-generator:latest
+        image: us-docker.pkg.dev/ai-on-gke-image-generator/ai-image-generator:latest
         resources:
           requests:
             cpu: "2"
