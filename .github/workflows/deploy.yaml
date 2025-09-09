@@ -1,33 +1,39 @@
-name: Build and Push to GAR
+name: Build and Push to GAR & Deploy to GKE
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      # Step 2: Set up gcloud and authenticate with service account
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Configure Docker auth
+      # Step 3: Configure Docker to use Artifact Registry
+      - name: Configure Docker auth for Artifact Registry
         run: gcloud auth configure-docker us-docker.pkg.dev --quiet
 
+      # Step 4: Build and push Docker image to Artifact Registry
       - name: Build and Push Docker image
         run: |
           IMAGE=us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/ai-image-generator/ai-image-generator:latest
           docker build -t $IMAGE .
           docker push $IMAGE
 
+      # Step 5: Deploy to GKE
       - name: Deploy to GKE
         run: |
-          gcloud container clusters get-credentials ai-on-gke-image-cluster --zone=us-central1-a
+          gcloud container clusters get-credentials ai-on-gke-image-cluster --zone=us-central1-a --project=${{ secrets.GCP_PROJECT_ID }}
+          # Replace PROJECT_ID placeholder in your deployment.yaml
           sed 's/PROJECT_ID/${{ secrets.GCP_PROJECT_ID }}/g' k8s/deployment.yaml | kubectl apply -f -

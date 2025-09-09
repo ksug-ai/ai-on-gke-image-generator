@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ai-image-generator
-        image: gcr.io/PROJECT_ID/ai-image-generator:latest
+        image: gcr.io/ai-on-gke-image-generator/ai-image-generator:latest
         resources:
           requests:
             cpu: "2"
