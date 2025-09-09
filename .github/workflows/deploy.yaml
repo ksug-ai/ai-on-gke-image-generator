@@ -13,31 +13,36 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # Step 2: Authenticate with Google Cloud
+      # Step 2: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # Step 3: Install gcloud SDK
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          install_components: 'kubectl'
 
-      # Step 3: Configure Docker to use Artifact Registry
+      # Step 4: Configure Docker to use Artifact Registry
       - name: Configure Docker auth for Artifact Registry
         run: gcloud auth configure-docker us-docker.pkg.dev --quiet
 
-      # Step 4: Build and push image to GAR
+      # Step 5: Build and push image to GAR
       - name: Build and Push Docker image
         run: |
           IMAGE=us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/ai-image-generator/ai-image-generator:latest
           docker build -t $IMAGE .
           docker push $IMAGE
 
-      # Step 5: Deploy to GKE
+      # Step 6: Deploy to GKE
       - name: Deploy to GKE
         run: |
           gcloud container clusters get-credentials ai-on-gke-image-cluster \
             --zone=us-central1-a \
             --project=${{ secrets.GCP_PROJECT_ID }}
 
-          # Replace PROJECT_ID in manifest before applying
           sed 's/PROJECT_ID/${{ secrets.GCP_PROJECT_ID }}/g' k8s/deployment.yaml \
             | kubectl apply -f -
