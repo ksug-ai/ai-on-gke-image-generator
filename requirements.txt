@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+streamlit
+torch
+torchvision
+torchaudio
+diffusers
+transformers
+accelerate

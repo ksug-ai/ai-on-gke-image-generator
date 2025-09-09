@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-image-generator-gpu
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-image-generator-gpu
+  template:
+    metadata:
+      labels:
+        app: ai-image-generator-gpu
+    spec:
+      containers:
+      - name: ai-image-generator
+        image: gcr.io/PROJECT_ID/ai-image-generator:latest
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+            cpu: "4"
+            memory: "16Gi"
+        ports:
+        - containerPort: 8080
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-image-generator-gpu-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: ai-image-generator-gpu
+  ports:
+  - port: 80
+    targetPort: 8080

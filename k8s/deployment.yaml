@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-image-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-image-generator
+  template:
+    metadata:
+      labels:
+        app: ai-image-generator
+    spec:
+      containers:
+      - name: ai-image-generator
+        image: gcr.io/PROJECT_ID/ai-image-generator:latest
+        resources:
+          requests:
+            cpu: "2"
+            memory: "8Gi"
+          limits:
+            cpu: "4"
+            memory: "16Gi"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-image-generator-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: ai-image-generator
+  ports:
+  - port: 80
+    targetPort: 8080

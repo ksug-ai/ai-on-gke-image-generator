@@ -1,0 +1,18 @@
+replicaCount: 1
+
+image:
+  repository: gcr.io/PROJECT_ID/ai-image-generator
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+  port: 80
+
+resources:
+  requests:
+    cpu: "2"
+    memory: "8Gi"
+  limits:
+    cpu: "4"
+    memory: "16Gi"
