@@ -21,8 +21,13 @@ jobs:
       - name: Configure Docker auth
         run: gcloud auth configure-docker gcr.io --quiet
 
-      - name: Build Docker image
+      - name: Build and Push Docker image
         run: |
           IMAGE=gcr.io/${{ secrets.GCP_PROJECT_ID }}/ai-image-generator:latest
           docker build -t $IMAGE .
           docker push $IMAGE
+
+      - name: Deploy to GKE
+        run: |
+          gcloud container clusters get-credentials ai-on-gke-image-cluster --zone=us-central1-a
+          sed 's/PROJECT_ID/${{ secrets.GCP_PROJECT_ID }}/g' k8s/deployment.yaml | kubectl apply -f -

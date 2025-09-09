@@ -15,7 +15,7 @@ def load_model():
 
 pipe = load_model()
 
-prompt = st.text_input("Enter your prompt:", "A Kubernetes astronaut riding a dragon in space")
+prompt = st.text_input("Enter your prompt:", "A Kubestronaut riding a dragon in space")
 
 if st.button("Generate"):
     with st.spinner("Generating image..."):
