@@ -25,12 +25,13 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
       
-      # Step 3.5: Install kubectl
-      - name: Install kubectl
+      # Step 3.5: Install kubectl and GKE auth plugin
+      - name: Install kubectl and GKE auth plugin
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           sudo mv kubectl /usr/local/bin/
+          gcloud components install gke-gcloud-auth-plugin
 
       # Step 4: Configure Docker to use Artifact Registry
       - name: Configure Docker auth for Artifact Registry
