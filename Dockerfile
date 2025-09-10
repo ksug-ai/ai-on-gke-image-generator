@@ -1,9 +1,14 @@
-FROM pytorch/pytorch:2.3.1-cuda12.1-cudnn8-runtime
+FROM python:3.10-slim
 
 WORKDIR /app
 
+# Copy requirements.txt first to leverage Docker's build cache
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install PyTorch and all other Python dependencies in a single layer
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --upgrade diffusers
 
 COPY . /app
 
