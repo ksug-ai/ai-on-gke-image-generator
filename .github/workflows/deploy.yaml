@@ -40,9 +40,8 @@ jobs:
       # Step 6: Deploy to GKE
       - name: Deploy to GKE
         run: |
-          gcloud container clusters get-credentials ai-on-gke-image-cluster \
+          gcloud container clusters get-credentials ai-on-gke-image-cluster-gpu \
             --zone=us-central1-a \
             --project=${{ secrets.GCP_PROJECT_ID }}
 
-          sed 's/PROJECT_ID/${{ secrets.GCP_PROJECT_ID }}/g' k8s/deployment.yaml \
-            | kubectl apply -f -
+          kubectl apply -f k8s/gpu-deployment.yaml
