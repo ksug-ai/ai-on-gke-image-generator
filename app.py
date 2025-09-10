@@ -1,5 +1,5 @@
 import streamlit as st
-from diffusers import StableDiffusionPipeline
+from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
 import torch
 import time
 import os
@@ -9,6 +9,14 @@ st.set_page_config(page_title="AI Image Generator", layout="wide")
 
 st.title("🎨 AI Image Generator on GKE")
 st.write("Type a prompt and let AI create an image for you!")
+
+# Model selection (SDXL recommended for photorealism)
+MODEL_CHOICES = {
+    "SDXL 1.0 Base": "stabilityai/stable-diffusion-xl-base-1.0",
+    "Realistic Vision XL (RealVisXL V4.0)": "SG161222/RealVisXL_V4.0",
+}
+selected_model_label = st.selectbox("Model", list(MODEL_CHOICES.keys()), index=1)
+selected_model_id = MODEL_CHOICES[selected_model_label]
 
 # Display GPU info
 torch_version = getattr(torch, "__version__", "unknown")
@@ -45,18 +53,43 @@ with st.expander("GPU diagnostics"):
     except Exception as e:
         st.write(f"nvidia-smi not available or failed: {e}")
 
-@st.cache_resource
-def load_model():
+@st.cache_resource(show_spinner=True)
+def load_model(model_id: str):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.float16 if device == "cuda" else torch.float32
-    st.write(f"Loading model on: {device} with dtype: {dtype}")
-    return StableDiffusionPipeline.from_pretrained(
-        "runwayml/stable-diffusion-v1-5", torch_dtype=dtype
-    ).to(device)
+    st.write(f"Loading {model_id} on: {device} with dtype: {dtype}")
 
-pipe = load_model()
+    # Decide pipeline class: use SDXL pipeline for XL models, SD for SD1.5
+    is_sdxl = "xl" in model_id.lower() or "stable-diffusion-xl" in model_id.lower()
 
-prompt = st.text_input("Enter your prompt:", "A Kubestronaut riding a dragon in space")
+    if is_sdxl:
+        # Some SDXL repos provide fp16 weights; avoid forcing variant that may not exist
+        pipe = StableDiffusionXLPipeline.from_pretrained(
+            model_id,
+            torch_dtype=dtype,
+            use_safetensors=True,
+        )
+    else:
+        pipe = StableDiffusionPipeline.from_pretrained(
+            model_id,
+            torch_dtype=dtype,
+            use_safetensors=True,
+        )
+
+    return pipe.to(device)
+
+pipe = load_model(selected_model_id)
+
+prompt = st.text_input("Enter your prompt:", "A photorealistic portrait, natural lighting, 85mm lens, shallow depth of field")
+negative_prompt = st.text_input("Negative prompt (optional)", "blurry, low quality, deformed, cartoon, illustration")
+steps = st.slider("Inference steps", 10, 60, 30)
+guidance = st.slider("Guidance scale", 1.0, 12.0, 5.0)
+if "xl" in selected_model_id.lower():
+    width = st.select_slider("Width", options=[768, 896, 1024, 1152, 1280], value=1024)
+    height = st.select_slider("Height", options=[768, 896, 1024, 1152, 1280], value=1024)
+else:
+    width = st.select_slider("Width", options=[512, 640, 768], value=512)
+    height = st.select_slider("Height", options=[512, 640, 768], value=512)
 
 if st.button("Generate"):
     with st.spinner("Generating image..."):
@@ -67,7 +100,24 @@ if st.button("Generate"):
             st.write(f"GPU memory before: {start_memory / 1024**3:.2f} GB")
         
         start_time = time.time()
-        image = pipe(prompt).images[0]
+        if isinstance(pipe, StableDiffusionXLPipeline):
+            image = pipe(
+                prompt=prompt,
+                negative_prompt=negative_prompt or None,
+                num_inference_steps=int(steps),
+                guidance_scale=float(guidance),
+                height=int(height),
+                width=int(width),
+            ).images[0]
+        else:
+            image = pipe(
+                prompt,
+                negative_prompt=negative_prompt or None,
+                num_inference_steps=int(steps),
+                guidance_scale=float(guidance),
+                height=int(height),
+                width=int(width),
+            ).images[0]
         end_time = time.time()
         
         if torch.cuda.is_available():
