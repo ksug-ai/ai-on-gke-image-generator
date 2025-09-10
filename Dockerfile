@@ -5,10 +5,12 @@ WORKDIR /app
 # Copy requirements.txt first to leverage Docker's build cache
 COPY requirements.txt .
 
-# Install PyTorch and all other Python dependencies in a single layer
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --upgrade diffusers
+# Install Python dependencies first, then install CUDA-enabled PyTorch LAST without deps so it isn't overridden
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir --upgrade diffusers && \
+    pip install --no-cache-dir --no-deps \
+      torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1+cu118 \
+      -f https://download.pytorch.org/whl/torch_stable.html
 
 COPY . /app
 
