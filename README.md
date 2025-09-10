@@ -27,7 +27,7 @@ kubectl get svc ai-image-generator-svc
 ```
 
 Open in browser and try:  
-👉 "A Kubernetes astronaut riding a dragon in space"
+👉 "A Kubestronaut riding a dragon in space"
 
 ### 3. Optional: GPU Deployment
 If your GKE cluster has GPU nodes:
