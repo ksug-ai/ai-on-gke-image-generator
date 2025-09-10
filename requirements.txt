@@ -1,9 +1,7 @@
-fastapi
-uvicorn
-streamlit
-torch
-torchvision
-torchaudio
-diffusers
-transformers
-accelerate
+streamlit==1.28.0
+torch==2.0.1
+torchvision==0.15.2
+torchaudio==2.0.2
+diffusers==0.21.4
+transformers==4.33.2
+accelerate==0.21.0
