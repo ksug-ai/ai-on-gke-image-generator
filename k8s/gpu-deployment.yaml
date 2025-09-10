@@ -14,14 +14,20 @@ spec:
     spec:
       containers:
       - name: ai-image-generator
-        image: gcr.io/PROJECT_ID/ai-image-generator:latest
+        image: us-docker.pkg.dev/ai-on-gke-image-generator/ai-image-generator/ai-image-generator:latest
         resources:
+          requests:
+            nvidia.com/gpu: 1
+            cpu: "2"
+            memory: "8Gi"
           limits:
             nvidia.com/gpu: 1
             cpu: "4"
             memory: "16Gi"
         ports:
         - containerPort: 8080
+      nodeSelector:
+        cloud.google.com/gke-accelerator: nvidia-tesla-t4
       tolerations:
       - key: "nvidia.com/gpu"
         operator: "Exists"
