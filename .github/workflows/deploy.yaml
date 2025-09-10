@@ -21,10 +21,16 @@ jobs:
 
       # Step 3: Install gcloud SDK
       - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          install_components: 'kubectl'
+      
+      # Step 3.5: Install kubectl
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
 
       # Step 4: Configure Docker to use Artifact Registry
       - name: Configure Docker auth for Artifact Registry
