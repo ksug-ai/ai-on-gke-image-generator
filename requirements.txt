@@ -2,3 +2,4 @@ streamlit
 transformers
 accelerate
 diffusers==0.27.2
+huggingface-hub==0.25.2
