@@ -1,5 +1,5 @@
 import streamlit as st
-from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
+from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline, DPMSolverMultistepScheduler
 import torch
 import time
 import os
@@ -75,6 +75,11 @@ def load_model(model_id: str):
             torch_dtype=dtype,
             use_safetensors=True,
         )
+    # Prefer DPM-Solver for SDXL to avoid Euler indexing issues at some step counts
+    try:
+        pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
+    except Exception:
+        pass
 
     return pipe.to(device)
 
