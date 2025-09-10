@@ -1,6 +1,7 @@
 import streamlit as st
 from diffusers import StableDiffusionPipeline
 import torch
+import time
 
 st.set_page_config(page_title="AI Image Generator", layout="wide")
 
@@ -29,5 +30,20 @@ prompt = st.text_input("Enter your prompt:", "A Kubestronaut riding a dragon in 
 
 if st.button("Generate"):
     with st.spinner("Generating image..."):
+        # Monitor GPU usage during generation
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            start_memory = torch.cuda.memory_allocated()
+            st.write(f"GPU memory before: {start_memory / 1024**3:.2f} GB")
+        
+        start_time = time.time()
         image = pipe(prompt).images[0]
+        end_time = time.time()
+        
+        if torch.cuda.is_available():
+            end_memory = torch.cuda.memory_allocated()
+            st.write(f"GPU memory after: {end_memory / 1024**3:.2f} GB")
+            st.write(f"GPU memory used: {(end_memory - start_memory) / 1024**3:.2f} GB")
+        
+        st.write(f"Generation time: {end_time - start_time:.2f} seconds")
         st.image(image, caption=prompt, use_column_width=True)
