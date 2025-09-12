@@ -33,21 +33,26 @@ docker push gcr.io/$PROJECT_ID/ai-image-generator:latest
 
 ### 2. Deploy to GKE
 ```bash
-kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/gpu-deployment.yaml
 ```
 
 Get external IP:
 ```bash
-kubectl get svc ai-image-generator-svc
+kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
 
 Open in browser and try:  
 👉 "A Kubestronaut riding a dragon in space"
 
-### 3. Optional: GPU Deployment
-If your GKE cluster has GPU nodes:
+### 3. Optional: CPU Deployment
+If you don't have GPU nodes, you can use the CPU-based deployment:
 ```bash
-kubectl apply -f k8s/gpu-deployment.yaml
+kubectl apply -f k8s/deployment.yaml
+```
+
+Get external IP:
+```bash
+kubectl get svc ai-image-generator-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
 
 ## 🌍 Demo Ideas
