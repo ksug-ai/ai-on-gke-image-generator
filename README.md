@@ -28,12 +28,12 @@ Once the cluster is created, you are ready to proceed with the setup.
 kubectl apply -f k8s/gpu-deployment.yaml
 ```
 
-Get external IP:
+Get external IP and open in browser:
 ```bash
-kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+echo "http://$(kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 ```
 
-Open in browser and try:  
+Click the URL above and try:  
 👉 "A Kubestronaut riding a dragon in space"
 
 ### 2. Optional: CPU Deployment
@@ -42,9 +42,9 @@ If you don't have GPU nodes, you can use the CPU-based deployment:
 kubectl apply -f k8s/deployment.yaml
 ```
 
-Get external IP:
+Get external IP and open in browser:
 ```bash
-kubectl get svc ai-image-generator-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+echo "http://$(kubectl get svc ai-image-generator-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 ```
 
 ### 3. Optional: Build & Push Your Own Image
