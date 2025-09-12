@@ -1,5 +1,5 @@
 import streamlit as st
-from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline, DPMSolverMultistepScheduler
+from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline, EulerDiscreteScheduler
 import torch
 import time
 import os
@@ -76,7 +76,8 @@ def load_model(model_id: str):
             torch_dtype=dtype,
             use_safetensors=True,
         )
-    # Use default scheduler to avoid indexing issues
+    # Use EulerDiscreteScheduler to avoid indexing issues
+    pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config)
 
     return pipe.to(device)
 
