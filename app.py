@@ -85,7 +85,7 @@ def load_model(model_id: str):
 
 pipe = load_model(selected_model_id)
 
-prompt = st.text_input("Enter your prompt:", "A photorealistic portrait, natural lighting, 85mm lens, shallow depth of field")
+prompt = st.text_input("Enter your prompt:", "A Kubestronaut riding a dragon in space")
 negative_prompt = st.text_input("Negative prompt (optional)", "blurry, low quality, deformed, cartoon, illustration")
 steps = st.slider("Inference steps", 10, 60, 30)
 guidance = st.slider("Guidance scale", 1.0, 12.0, 5.0)
@@ -131,4 +131,4 @@ if st.button("Generate"):
             st.write(f"GPU memory used: {(end_memory - start_memory) / 1024**3:.2f} GB")
         
         st.write(f"Generation time: {end_time - start_time:.2f} seconds")
-        st.image(image, caption=prompt, use_column_width=True)
+        st.image(image, caption=prompt, use_container_width=True)
