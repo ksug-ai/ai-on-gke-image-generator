@@ -1,11 +1,11 @@
-name: Build, Push to GAR & Deploy to GKE
+name: Build and Push to GAR
 
 on:
   push:
     branches: ["main"]
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,14 +24,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-      
-      # Step 3.5: Install kubectl and GKE auth plugin
-      - name: Install kubectl and GKE auth plugin
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
-          gcloud components install gke-gcloud-auth-plugin
 
       # Step 4: Configure Docker to use Artifact Registry
       - name: Configure Docker auth for Artifact Registry
@@ -43,12 +35,3 @@ jobs:
           IMAGE=us-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/ai-image-generator/ai-image-generator:latest
           docker build -t $IMAGE .
           docker push $IMAGE
-
-      # Step 6: Deploy to GKE
-      - name: Deploy to GKE
-        run: |
-          gcloud container clusters get-credentials ai-on-gke-image-cluster-gpu \
-            --zone=us-central1-a \
-            --project=${{ secrets.GCP_PROJECT_ID }}
-
-          kubectl apply -f k8s/gpu-deployment.yaml

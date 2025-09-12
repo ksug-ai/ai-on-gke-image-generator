@@ -7,6 +7,21 @@ This is a hands-on workshop app that runs **Stable Diffusion** on **Google Kuber
 - Runs on GKE (CPU or GPU nodes)
 - Scales with Kubernetes deployments
 
+## Prerequisites
+
+Before you begin, you need a GKE cluster. You can create one using the provided script:
+
+**Create a CPU-based GKE cluster:**
+```bash
+./ai-on-gke-cluster.sh cpu
+```
+
+**Or, create a GPU-based GKE cluster (recommended for faster inference):**
+```bash
+./ai-on-gke-cluster.sh gpu
+```
+Once the cluster is created, you are ready to proceed with the setup.
+
 ## 🛠 Setup
 
 ### 1. Build & Push Image
