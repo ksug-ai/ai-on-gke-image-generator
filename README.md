@@ -7,6 +7,8 @@ This is a hands-on workshop app that runs **Stable Diffusion** on **Google Kuber
 - Runs on GKE (CPU or GPU nodes)
 - Scales with Kubernetes deployments
 
+**Performance:** GPU is recommended, typically an image can be generated in ~30 seconds with NVIDIA T4. For CPU, it does take 15 mins or much longer.
+
 ## Prerequisites
 
 Before you begin, you need a GKE cluster with GPU nodes. You can create one using the provided script:
