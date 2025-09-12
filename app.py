@@ -8,7 +8,7 @@ import threading
 
 st.set_page_config(page_title="AI Image Generator", layout="wide")
 
-st.title("🎨 AI Image Generator on GKE")
+st.title("🎨 AI Image Generator on GKE by [KSUG.AI](https://ksug.ai)")
 st.write("Type a prompt and let AI create an image for you!")
 
 # Model selection (SDXL recommended for photorealism)
