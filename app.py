@@ -4,6 +4,7 @@ import torch
 import time
 import os
 import subprocess
+import threading
 
 st.set_page_config(page_title="AI Image Generator", layout="wide")
 
@@ -75,11 +76,7 @@ def load_model(model_id: str):
             torch_dtype=dtype,
             use_safetensors=True,
         )
-    # Prefer DPM-Solver for SDXL to avoid Euler indexing issues at some step counts
-    try:
-        pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
-    except Exception:
-        pass
+    # Use default scheduler to avoid indexing issues
 
     return pipe.to(device)
 
@@ -87,7 +84,7 @@ pipe = load_model(selected_model_id)
 
 prompt = st.text_input("Enter your prompt:", "A Kubestronaut riding a dragon in space")
 negative_prompt = st.text_input("Negative prompt (optional)", "blurry, low quality, deformed, cartoon, illustration")
-steps = st.slider("Inference steps", 10, 60, 30)
+steps = st.slider("Inference steps", 10, 50, 25)
 guidance = st.slider("Guidance scale", 1.0, 12.0, 5.0)
 if "xl" in selected_model_id.lower():
     width = st.select_slider("Width", options=[768, 896, 1024, 1152, 1280], value=1024)
@@ -96,39 +93,44 @@ else:
     width = st.select_slider("Width", options=[512, 640, 768], value=512)
     height = st.select_slider("Height", options=[512, 640, 768], value=512)
 
+# Global lock to prevent concurrent generations
+if "generation_lock" not in st.session_state:
+    st.session_state.generation_lock = threading.Lock()
+
 if st.button("Generate"):
-    with st.spinner("Generating image..."):
-        # Monitor GPU usage during generation
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            start_memory = torch.cuda.memory_allocated()
-            st.write(f"GPU memory before: {start_memory / 1024**3:.2f} GB")
-        
-        start_time = time.time()
-        if isinstance(pipe, StableDiffusionXLPipeline):
-            image = pipe(
-                prompt=prompt,
-                negative_prompt=negative_prompt or None,
-                num_inference_steps=int(steps),
-                guidance_scale=float(guidance),
-                height=int(height),
-                width=int(width),
-            ).images[0]
-        else:
-            image = pipe(
-                prompt,
-                negative_prompt=negative_prompt or None,
-                num_inference_steps=int(steps),
-                guidance_scale=float(guidance),
-                height=int(height),
-                width=int(width),
-            ).images[0]
-        end_time = time.time()
-        
-        if torch.cuda.is_available():
-            end_memory = torch.cuda.memory_allocated()
-            st.write(f"GPU memory after: {end_memory / 1024**3:.2f} GB")
-            st.write(f"GPU memory used: {(end_memory - start_memory) / 1024**3:.2f} GB")
-        
-        st.write(f"Generation time: {end_time - start_time:.2f} seconds")
-        st.image(image, caption=prompt, use_container_width=True)
+    with st.session_state.generation_lock:
+        with st.spinner("Generating image..."):
+            # Monitor GPU usage during generation
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+                start_memory = torch.cuda.memory_allocated()
+                st.write(f"GPU memory before: {start_memory / 1024**3:.2f} GB")
+            
+            start_time = time.time()
+            if isinstance(pipe, StableDiffusionXLPipeline):
+                image = pipe(
+                    prompt=prompt,
+                    negative_prompt=negative_prompt or None,
+                    num_inference_steps=int(steps),
+                    guidance_scale=float(guidance),
+                    height=int(height),
+                    width=int(width),
+                ).images[0]
+            else:
+                image = pipe(
+                    prompt,
+                    negative_prompt=negative_prompt or None,
+                    num_inference_steps=int(steps),
+                    guidance_scale=float(guidance),
+                    height=int(height),
+                    width=int(width),
+                ).images[0]
+            end_time = time.time()
+            
+            if torch.cuda.is_available():
+                end_memory = torch.cuda.memory_allocated()
+                st.write(f"GPU memory after: {end_memory / 1024**3:.2f} GB")
+                st.write(f"GPU memory used: {(end_memory - start_memory) / 1024**3:.2f} GB")
+            
+            st.write(f"Generation time: {end_time - start_time:.2f} seconds")
+            st.image(image, caption=prompt, use_container_width=True)
