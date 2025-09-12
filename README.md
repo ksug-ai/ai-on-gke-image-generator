@@ -24,14 +24,7 @@ Once the cluster is created, you are ready to proceed with the setup.
 
 ## 🛠 Setup
 
-### 1. Build & Push Image
-```bash
-PROJECT_ID=$(gcloud config get-value project)
-docker build -t gcr.io/$PROJECT_ID/ai-image-generator:latest .
-docker push gcr.io/$PROJECT_ID/ai-image-generator:latest
-```
-
-### 2. Deploy to GKE
+### 1. Deploy to GKE
 ```bash
 kubectl apply -f k8s/gpu-deployment.yaml
 ```
@@ -44,7 +37,7 @@ kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.loadBalancer.in
 Open in browser and try:  
 👉 "A Kubestronaut riding a dragon in space"
 
-### 3. Optional: CPU Deployment
+### 2. Optional: CPU Deployment
 If you don't have GPU nodes, you can use the CPU-based deployment:
 ```bash
 kubectl apply -f k8s/deployment.yaml
@@ -53,6 +46,23 @@ kubectl apply -f k8s/deployment.yaml
 Get external IP:
 ```bash
 kubectl get svc ai-image-generator-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+
+### 3. Optional: Build & Push Your Own Image
+
+First, create a repository in Artifact Registry:
+
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+gcloud artifacts repositories create ai-image-generator --repository-format=docker --location=us-central1 --description="AI Image Generator repository"
+```
+
+Then, build and push your image:
+
+```bash
+PROJECT_ID=$(gcloud config get-value project)
+docker build -t us-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest .
+docker push us-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest
 ```
 
 ## 🌍 Demo Ideas
