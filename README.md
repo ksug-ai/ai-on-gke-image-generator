@@ -1,4 +1,4 @@
-# 🎨 AI Image Generator on GKE
+# 🎨 AI Image Generator on GKE by [KSUG.AI](https://ksug.ai)
 
 This is a hands-on workshop app that runs **Stable Diffusion** on **Google Kubernetes Engine (GKE)**.
 
