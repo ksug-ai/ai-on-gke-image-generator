@@ -38,6 +38,8 @@ echo "http://$(kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.
 Click the URL above and try:  
 👉 "A Kubestronaut riding a dragon in space"
 
+**Note:** It might take a few minutes to load_model for the first time use due to the fact of the model size ~8GB, GPU initialization, CUDA kernels warm-up, cold start on GKE.
+
 ### 2. Optional: CPU Deployment
 If you don't have GPU nodes, you can use the CPU-based deployment:
 ```bash
