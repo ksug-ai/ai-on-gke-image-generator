@@ -72,3 +72,35 @@ docker push us-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:
 kubectl scale deployment ai-image-generator --replicas=5
 ```
 - Run multiple prompts at once to see Kubernetes distribute load.
+
+## 🛠 Tech Stack
+
+**🤖 AI/ML:**
+- **Stable Diffusion XL** - AI image generation models
+- **PyTorch** - Deep learning framework with CUDA support
+- **Diffusers** - Hugging Face library for diffusion models
+- **Transformers** - Text encoding and model management
+
+**🖥️ Frontend:**
+- **Streamlit** - Python web app framework for UI
+
+**☁️ Cloud Infrastructure:**
+- **Google Kubernetes Engine (GKE)** - Managed Kubernetes service
+- **NVIDIA T4 GPUs** - Hardware acceleration for AI inference
+- **Google Artifact Registry** - Container image storage
+
+**🐳 Containerization:**
+- **Docker** - Application containerization
+- **Python 3.10** - Runtime environment
+- **CUDA 11.8** - GPU computing platform
+
+**⚙️ DevOps:**
+- **GitHub Actions** - CI/CD pipeline
+- **Kubernetes** - Container orchestration
+- **kubectl** - Kubernetes CLI tool
+- **gcloud** - Google Cloud CLI
+
+**🔧 Development:**
+- **Bash scripting** - Cluster management automation
+- **YAML** - Kubernetes configuration
+- **Threading** - Concurrent request handling
