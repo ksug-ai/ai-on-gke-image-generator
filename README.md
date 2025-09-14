@@ -1,6 +1,6 @@
 # 🎨 AI Image Generator on GKE by [KSUG.AI](https://ksug.ai)
 
-This is a hands-on workshop app that runs **Stable Diffusion** on **Google Kubernetes Engine (GKE)**.
+This is a hands-on workshop python app that runs **Stable Diffusion** on **Google Kubernetes Engine (GKE)**.
 
 ## 🚀 Features
 - Generate AI images from text prompts
