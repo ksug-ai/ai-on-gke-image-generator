@@ -106,3 +106,8 @@ kubectl scale deployment ai-image-generator --replicas=5
 - **Bash scripting** - Cluster management automation
 - **YAML** - Kubernetes configuration
 - **Threading** - Concurrent request handling
+
+## Join the KSUG.AI Global Community  
+📍 **Meetups Around the World!**  
+📢 **Follow Us:** [https://linktr.ee/ksug.ai](https://linktr.ee/ksug.ai)  
+🌐 **Website:** [https://ksug.ai](https://ksug.ai/save)  
