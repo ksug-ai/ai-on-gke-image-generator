@@ -76,8 +76,7 @@ def load_model(model_id: str):
             torch_dtype=dtype,
             use_safetensors=True,
         )
-    # Use EulerDiscreteScheduler to avoid indexing issues
-    pipe.scheduler = EulerDiscreteScheduler.from_config(pipe.scheduler.config)
+    # Use model's default scheduler to avoid indexing issues
 
     return pipe.to(device)
 
