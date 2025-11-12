@@ -71,7 +71,11 @@ docker push us-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:
 ## 🌍 Demo Ideas
 - Show scaling with:
 ```bash
-kubectl scale deployment ai-image-generator --replicas=5
+# For GPU deployment
+kubectl scale deployment ai-image-generator-gpu --replicas=2
+
+# For CPU deployment
+kubectl scale deployment ai-image-generator-cpu --replicas=2
 ```
 - Run multiple prompts at once to see Kubernetes distribute load.
 
