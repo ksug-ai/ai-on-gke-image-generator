@@ -82,7 +82,7 @@ def load_model(model_id: str):
 
 pipe = load_model(selected_model_id)
 
-prompt = st.text_input("Enter your prompt:", "A Kubestronaut riding a dragon in space")
+prompt = st.text_input("Enter your prompt:", "A golden kubestrong riding a dragon in space")
 negative_prompt = st.text_input("Negative prompt (optional)", "blurry, low quality, deformed, cartoon, illustration")
 steps = st.slider("Inference steps", 10, 50, 25)
 guidance = st.slider("Guidance scale", 1.0, 12.0, 5.0)
