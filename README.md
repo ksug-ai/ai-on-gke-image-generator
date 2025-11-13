@@ -36,7 +36,7 @@ echo "http://$(kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.
 ```
 
 Click the URL above and try:  
-👉 "A golden kubestrong riding a dragon in space"
+👉 "A kubestronaut riding a dragon in space"
 
 **Note:** It might take a few minutes to load_model for the first time use due to the fact of the model size ~8GB, GPU initialization, CUDA kernels warm-up, cold start on GKE.
 
