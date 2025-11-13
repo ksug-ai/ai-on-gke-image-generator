@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Set the project ID
+PROJECT_ID="ai-on-gke-image-generator"
+echo "Setting GCP project to $PROJECT_ID..."
+gcloud config set project $PROJECT_ID
+
 # Get first available T4 zone (cached to avoid duplicate API calls)
 T4_ZONE=$(gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~us-central1" --format="value(zone)" | head -1)
 ZONE="${T4_ZONE:-us-central1-b}"
