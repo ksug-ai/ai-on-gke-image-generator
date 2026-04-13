@@ -11,7 +11,17 @@ This is a hands-on workshop python app that runs **Stable Diffusion** on **Googl
 
 ## Prerequisites
 
-Before you begin, you need a GKE cluster with GPU nodes. You can create one using the provided script:
+Before you begin, ensure you have the following installed on your machine:
+- **[Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (`gcloud`)**
+- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (required for building the container image)
+
+Make sure your Google Cloud SDK is initialized so `gcloud` points to your GCP project:
+
+```bash
+gcloud init
+```
+
+Next, you need a GKE cluster with GPU nodes. You can create one using the provided script:
 
 ```bash
 ./ai-on-gke-cluster.sh gpu
@@ -25,33 +35,9 @@ Once the cluster is created, you are ready to proceed with the setup.
 
 ## 🛠 Setup
 
-### 1. Deploy to GKE
-```bash
-kubectl apply -f k8s/gpu-deployment.yaml
-```
+### 1. Build & Push the Docker Image
 
-Get external IP and open in browser:
-```bash
-echo "http://$(kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-```
-
-Click the URL above and try:  
-👉 "A kubestronaut riding a dragon in space"
-
-**Note:** It might take a few minutes to load_model for the first time use due to the fact of the model size ~8GB, GPU initialization, CUDA kernels warm-up, cold start on GKE.
-
-### 2. Optional: CPU Deployment
-If you don't have GPU nodes, you can use the CPU-based deployment:
-```bash
-kubectl apply -f k8s/deployment.yaml
-```
-
-Get external IP and open in browser:
-```bash
-echo "http://$(kubectl get svc ai-image-generator-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-```
-
-### 3. Optional: Build & Push Your Own Image
+Since you are running this in your own Google Cloud project, you need to build the Docker image and push it to your own Artifact Registry.
 
 First, create a repository in Artifact Registry:
 
@@ -66,6 +52,34 @@ Then, build and push your image:
 PROJECT_ID=$(gcloud config get-value project)
 docker build -t us-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest .
 docker push us-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest
+```
+
+**Important:** Before moving to the next step, you must update the image reference in the deployment YAML files (`k8s/gpu-deployment.yaml` and `k8s/deployment.yaml`) to match your `$PROJECT_ID`. Change `ai-on-gke-image-generator` in the image path to your actual project ID.
+
+### 2. Deploy to GKE
+```bash
+kubectl apply -f k8s/gpu-deployment.yaml
+```
+
+Get external IP and open in browser:
+```bash
+echo "http://$(kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+```
+
+Click the URL above and try:  
+👉 "A kubestronaut riding a dragon in space"
+
+**Note:** It might take a few minutes to load_model for the first time use due to the fact of the model size ~8GB, GPU initialization, CUDA kernels warm-up, cold start on GKE.
+
+### 3. Optional: CPU Deployment
+If you don't have GPU nodes, you can use the CPU-based deployment:
+```bash
+kubectl apply -f k8s/deployment.yaml
+```
+
+Get external IP and open in browser:
+```bash
+echo "http://$(kubectl get svc ai-image-generator-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 ```
 
 ## 🌍 Demo Ideas
@@ -113,5 +127,5 @@ kubectl scale deployment ai-image-generator-cpu --replicas=2
 
 ## Join the KSUG.AI Global Community  
 📍 **Meetups Around the World!**  
-📢 **Follow Us:** [https://linktr.ee/ksug.ai](https://linktr.ee/ksug.ai)  
-🌐 **Website:** [https://ksug.ai](https://ksug.ai/save)  
+📢 **Follow Us:** [https://github.com/ksug-ai](https://github.com/ksug-ai)  
+🌐 **Website:** [https://ksug.ai](https://ksug.ai/?ref=workshop)  

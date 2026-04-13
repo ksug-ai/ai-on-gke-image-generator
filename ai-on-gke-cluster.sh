@@ -2,7 +2,7 @@
 set -e
 
 # Set the project ID and region
-PROJECT_ID="${GCP_PROJECT_ID:-ai-on-gke-image-generator}"
+PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project)}"
 REGION="${GCP_REGION:-us-central1}"
 echo "Setting GCP project to $PROJECT_ID..."
 gcloud config set project $PROJECT_ID
@@ -112,7 +112,7 @@ case "$1" in
     echo "  stop  - Delete all clusters"
     echo
     echo "Configuration:"
-    echo "  GCP_PROJECT_ID - GCP Project ID (default: ai-on-gke-image-generator)"
+    echo "  GCP_PROJECT_ID - GCP Project ID (default: \$(gcloud config get-value project))"
     echo "  GCP_REGION     - GCP Region (default: us-central1)"
     exit 1
     ;;
