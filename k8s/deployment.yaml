@@ -6,7 +6,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ai-image-generator
+      app: ai-image-generator-cpu
   template:
     metadata:
       labels:
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ai-image-generator-cpu
-        image: us-docker.pkg.dev/ai-on-gke-image-generator/ai-image-generator/ai-image-generator-cpu:latest
+        image: us-docker.pkg.dev/ai-on-gke-image-generator/ai-image-generator/ai-image-generator:latest
         resources:
           requests:
             cpu: "1"
