@@ -32,7 +32,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app: ai-image-generator
+    app: ai-image-generator-cpu
   ports:
   - port: 80
     targetPort: 8080
