@@ -63,22 +63,32 @@ def load_model(model_id: str):
     # Decide pipeline class: use SDXL pipeline for XL models, SD for SD1.5
     is_sdxl = "xl" in model_id.lower() or "stable-diffusion-xl" in model_id.lower()
 
-    if is_sdxl:
-        # Some SDXL repos provide fp16 weights; avoid forcing variant that may not exist
-        pipe = StableDiffusionXLPipeline.from_pretrained(
-            model_id,
-            torch_dtype=dtype,
-            use_safetensors=True,
-        )
-    else:
-        pipe = StableDiffusionPipeline.from_pretrained(
-            model_id,
-            torch_dtype=dtype,
-            use_safetensors=True,
-        )
-    # Use model's default scheduler to avoid indexing issues
+    max_retries = 5
+    for attempt in range(1, max_retries + 1):
+        try:
+            st.write(f"Download attempt {attempt}/{max_retries}...")
+            if is_sdxl:
+                pipe = StableDiffusionXLPipeline.from_pretrained(
+                    model_id,
+                    torch_dtype=dtype,
+                    use_safetensors=True,
+                )
+            else:
+                pipe = StableDiffusionPipeline.from_pretrained(
+                    model_id,
+                    torch_dtype=dtype,
+                    use_safetensors=True,
+                )
+            break  # Success — exit retry loop
+        except Exception as e:
+            st.warning(f"Attempt {attempt} failed: {e}")
+            if attempt == max_retries:
+                st.error("Failed to load model after all retries. Please restart the pod.")
+                raise
+            st.write("Retrying (HuggingFace Hub will resume partial download)...")
 
     return pipe.to(device)
+
 
 pipe = load_model(selected_model_id)
 
