@@ -1,17 +1,19 @@
 #!/bin/bash
+set -e
 
-# Set the project ID
-PROJECT_ID="ai-on-gke-image-generator"
+# Set the project ID and region
+PROJECT_ID="${GCP_PROJECT_ID:-ai-on-gke-image-generator}"
+REGION="${GCP_REGION:-us-central1}"
 echo "Setting GCP project to $PROJECT_ID..."
 gcloud config set project $PROJECT_ID
 
 # Get first available T4 zone (cached to avoid duplicate API calls)
-T4_ZONE=$(gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~us-central1" --format="value(zone)" | head -1)
-ZONE="${T4_ZONE:-us-central1-b}"
+T4_ZONE=$(gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="value(zone)" | head -1)
+ZONE="${T4_ZONE:-${REGION}-b}"
 
 check_gpu_availability() {
-  echo "Checking T4 GPU availability..."
-  gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4" --format="value(zone)" | head -5
+  echo "Checking T4 GPU availability in $REGION..."
+  gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="table(zone)"
 }
 
 start_cpu() {
@@ -26,7 +28,7 @@ start_cpu() {
     --enable-autoscaling \
     --min-nodes=1 \
     --max-nodes=3 \
-    --preemptible; then
+    --spot; then
     echo "Failed to create CPU cluster"
     exit 1
   fi
@@ -42,7 +44,7 @@ start_cpu() {
 
 start_gpu() {
   if [ -z "$T4_ZONE" ]; then
-    echo "No T4 GPUs available in us-central1 region"
+    echo "No T4 GPUs available in $REGION region"
     exit 1
   fi
   
@@ -57,7 +59,7 @@ start_gpu() {
     --enable-autoscaling \
     --min-nodes=0 \
     --max-nodes=2 \
-    --preemptible; then
+    --spot; then
     echo "Failed to create GPU cluster"
     exit 1
   fi
@@ -68,7 +70,7 @@ start_gpu() {
   DURATION=$((END_TIME - START_TIME))
   MINUTES=$((DURATION / 60))
   SECONDS=$((DURATION % 60))
-  echo "GPU cluster created successfully in $T4_ZONE in ${MINUTES}m ${SECONDS}s!"
+  echo "GPU cluster created successfully in ${MINUTES}m ${SECONDS}s!"
 }
 
 list() {
@@ -78,11 +80,9 @@ list() {
 
 stop() {
   echo "Deleting clusters..."
-  # Get all existing clusters and delete them
-  gcloud container clusters list --format="value(name,zone)" | while read -r name zone; do
-    if [[ "$name" == "ai-on-gke-image-cluster"* ]]; then
-      gcloud container clusters delete "$name" --zone="$zone" --quiet 2>/dev/null || true
-    fi
+  # Get all existing clusters matching the pattern and delete them
+  gcloud container clusters list --filter="name ~ ai-on-gke-image-cluster" --format="value(name,zone)" | while read -r name zone; do
+    gcloud container clusters delete "$name" --zone="$zone" --quiet
   done
   echo "Clusters deleted successfully!"
 }
@@ -110,6 +110,10 @@ case "$1" in
     echo "  check - Check T4 GPU availability"
     echo "  list  - List all clusters"
     echo "  stop  - Delete all clusters"
+    echo
+    echo "Configuration:"
+    echo "  GCP_PROJECT_ID - GCP Project ID (default: ai-on-gke-image-generator)"
+    echo "  GCP_REGION     - GCP Region (default: us-central1)"
     exit 1
     ;;
 esac
