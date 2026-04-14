@@ -37,13 +37,14 @@ Once the cluster is created, you are ready to proceed with the setup.
 
 ## ⚠️ GPU Quota Pre-check
 
-Google Cloud projects typically start with **zero** GPU quota. Before running the GPU script, you must ensure you have enough quota in your region (e.g., `us-central1`).
+Google Cloud projects typically start with **zero** GPU quota. Before running the GPU script, you must ensure you have enough quota in your chosen region.
 
 ### 1. Check your current Quota (CLI)
 Run this command to see your T4 GPU quota:
 
 ```bash
-gcloud compute regions describe us-central1 \
+REGION=us-central1  # change this if using a different region
+gcloud compute regions describe $REGION \
     --flatten="quotas" \
     --format="table(quotas.metric, quotas.limit, quotas.usage)" | grep "NVIDIA_T4_GPUS"
 ```
@@ -53,7 +54,7 @@ If the `LIMIT` is `0.0`, you **must** request an increase.
 ### 2. Requesting an Increase (Web Console)
 1. Go to **[IAM & Admin > Quotas](https://console.cloud.google.com/iam-admin/quotas)**.
 2. Filter by `Metric: nvidia.com/t4_gpus`.
-3. Select the region (e.g., `us-central1`).
+3. Select your region (matching the `$REGION` you set above).
 4. Click **EDIT QUOTAS** at the top.
 5. Enter the new limit (e.g., `1`) and submit.
 
@@ -71,15 +72,17 @@ First, create a repository in Artifact Registry:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
-gcloud artifacts repositories create ai-image-generator --repository-format=docker --location=us-central1 --description="AI Image Generator repository"
+REGION=us-central1  # change this if using a different region
+gcloud artifacts repositories create ai-image-generator --repository-format=docker --location=$REGION --description="AI Image Generator repository"
 ```
 
 Then, build and push your image:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
-docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest .
-docker push us-central1-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest
+REGION=us-central1  # change this if using a different region
+docker build -t $REGION-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest .
+docker push $REGION-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest
 ```
 
 **Important:** Before moving to the next step, you must update the image reference in the deployment YAML files (`k8s/gpu-deployment.yaml` and `k8s/deployment.yaml`) to match your `$PROJECT_ID`. Change `ai-on-gke-image-generator` in the image path to your actual project ID.
