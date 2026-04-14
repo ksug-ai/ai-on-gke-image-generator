@@ -64,33 +64,23 @@ If the `LIMIT` is `0.0`, you **must** request an increase.
 
 ## 🛠 Setup
 
-### 1. Build & Push the Docker Image
-
-Since you are running this in your own Google Cloud project, you need to build the Docker image and push it to your own Artifact Registry.
-
-First, create a repository in Artifact Registry:
+The `setup.sh` script automates everything — creating the Artifact Registry repository, building and pushing the Docker image, and patching the Kubernetes YAML files with your project and region.
 
 ```bash
-PROJECT_ID=$(gcloud config get-value project)
-REGION=us-central1  # change this if using a different region
-gcloud artifacts repositories create ai-image-generator --repository-format=docker --location=$REGION --description="AI Image Generator repository"
+./setup.sh
 ```
 
-Then, build and push your image:
+By default it uses your active `gcloud` project and region `us-central1`. Override with environment variables if needed:
 
 ```bash
-PROJECT_ID=$(gcloud config get-value project)
-REGION=us-central1  # change this if using a different region
-docker build -t $REGION-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest .
-docker push $REGION-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest
+GCP_PROJECT_ID=my-project GCP_REGION=australia-southeast1 ./setup.sh
 ```
 
-**Important:** Before moving to the next step, you must update the image reference in the deployment YAML files (`k8s/gpu-deployment.yaml` and `k8s/deployment.yaml`) to match your `$PROJECT_ID`. Change `ai-on-gke-image-generator` in the image path to your actual project ID.
-
-### 2. Deploy to GKE
+### Deploy to GKE
 ```bash
 kubectl apply -f k8s/gpu-deployment.yaml
 ```
+
 
 Get external IP and open in browser:
 ```bash

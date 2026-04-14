@@ -7,6 +7,11 @@ REGION="${GCP_REGION:-us-central1}"
 echo "Setting GCP project to $PROJECT_ID..."
 gcloud config set project $PROJECT_ID
 
+# Enable required APIs
+echo "Enabling required Google Cloud APIs..."
+gcloud services enable container.googleapis.com --quiet
+echo "APIs enabled."
+
 # Get first available T4 zone (cached to avoid duplicate API calls)
 T4_ZONE=$(gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="value(zone)" | head -1)
 ZONE="${T4_ZONE:-${REGION}-b}"
