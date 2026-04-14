@@ -33,7 +33,7 @@ echo
 
 # ─── Step 0: Enable required APIs ────────────────────────────────────────────
 echo "▶ Step 0: Enabling required Google Cloud APIs..."
-gcloud services enable artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet
+gcloud services enable compute.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet
 echo "  ✔ APIs enabled."
 
 # ─── Step 1: Create Artifact Registry repository (skip if exists) ─────────────
