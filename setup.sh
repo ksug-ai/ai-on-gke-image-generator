@@ -86,9 +86,20 @@ else
   echo "  ✔ Repository created."
 fi
 
-# ─── Step 2: Build & push via Cloud Build ────────────────────────────────────
+# ─── Step 2: Grant Cloud Build SA permission to push to Artifact Registry ────
 echo
-echo "▶ Step 2: Building and pushing image via Cloud Build..."
+echo "▶ Step 2: Granting Cloud Build service account Artifact Registry access..."
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
+CLOUDBUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${CLOUDBUILD_SA}" \
+  --role="roles/artifactregistry.writer" \
+  --quiet > /dev/null
+echo "  ✔ Granted roles/artifactregistry.writer to ${CLOUDBUILD_SA}."
+
+# ─── Step 3: Build & push via Cloud Build ────────────────────────────────────
+echo
+echo "▶ Step 3: Building and pushing image via Cloud Build..."
 echo "  (builds and pushes entirely within GCP — no local Docker push needed)"
 gcloud builds submit \
   --tag "$IMAGE_PATH" \
@@ -96,9 +107,9 @@ gcloud builds submit \
   .
 echo "  ✔ Build and push complete."
 
-# ─── Step 3: Patch the Kubernetes YAML files ─────────────────────────────────
+# ─── Step 4: Patch the Kubernetes YAML files ─────────────────────────────────
 echo
-echo "▶ Step 3: Patching Kubernetes deployment YAML files..."
+echo "▶ Step 4: Patching Kubernetes deployment YAML files..."
 for YAML_FILE in k8s/gpu-deployment.yaml k8s/deployment.yaml; do
   if [ -f "$YAML_FILE" ]; then
     sed -i.bak "s|PROJECT_ID|${PROJECT_ID}|g; s|us-central1-docker.pkg.dev|${REGION}-docker.pkg.dev|g" "$YAML_FILE"
