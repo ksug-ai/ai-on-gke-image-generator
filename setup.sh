@@ -59,12 +59,12 @@ gcloud builds submit \
   .
 echo "  ✔ Build and push complete."
 
-# ─── Step 5: Patch the Kubernetes YAML files ─────────────────────────────────
+# ─── Step 3: Patch the Kubernetes YAML files ─────────────────────────────────
 echo
-echo "▶ Step 5: Patching Kubernetes deployment YAML files..."
+echo "▶ Step 3: Patching Kubernetes deployment YAML files..."
 for YAML_FILE in k8s/gpu-deployment.yaml k8s/deployment.yaml; do
   if [ -f "$YAML_FILE" ]; then
-    sed -i.bak "s|image:.*ai-image-generator.*|image: ${IMAGE_PATH}|g" "$YAML_FILE"
+    sed -i.bak "s|PROJECT_ID|${PROJECT_ID}|g; s|us-central1-docker.pkg.dev|${REGION}-docker.pkg.dev|g" "$YAML_FILE"
     rm -f "${YAML_FILE}.bak"
     echo "  ✔ Patched $YAML_FILE"
   fi
