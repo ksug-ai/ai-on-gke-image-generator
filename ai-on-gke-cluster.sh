@@ -37,7 +37,7 @@ check_gpu_availability() {
 
 start_cpu() {
   echo "Enabling required Google Cloud APIs..."
-  gcloud services enable container.googleapis.com --quiet
+  gcloud services enable compute.googleapis.com container.googleapis.com --quiet
   echo "Creating CPU GKE cluster in $ZONE..."
   START_TIME=$(date +%s)
   
@@ -65,7 +65,7 @@ start_cpu() {
 
 start_gpu() {
   echo "Enabling required Google Cloud APIs..."
-  gcloud services enable container.googleapis.com --quiet
+  gcloud services enable compute.googleapis.com container.googleapis.com --quiet
 
   if [ -z "$T4_ZONE" ]; then
     echo "No T4 GPUs available in $REGION region"
