@@ -21,12 +21,7 @@ fi
 echo "Setting GCP project to $PROJECT_ID..."
 gcloud config set project $PROJECT_ID
 
-# Enable required APIs
-echo "Enabling required Google Cloud APIs..."
-gcloud services enable container.googleapis.com --quiet
-echo "APIs enabled."
-
-# Get first available T4 zone (cached to avoid duplicate API calls)
+# Get first available T4 zone (only needed for gpu/check)
 T4_ZONE=$(gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="value(zone)" | head -1)
 ZONE="${T4_ZONE:-${REGION}-b}"
 
@@ -41,6 +36,8 @@ check_gpu_availability() {
 }
 
 start_cpu() {
+  echo "Enabling required Google Cloud APIs..."
+  gcloud services enable container.googleapis.com --quiet
   echo "Creating CPU GKE cluster in $ZONE..."
   START_TIME=$(date +%s)
   
@@ -67,11 +64,14 @@ start_cpu() {
 }
 
 start_gpu() {
+  echo "Enabling required Google Cloud APIs..."
+  gcloud services enable container.googleapis.com --quiet
+
   if [ -z "$T4_ZONE" ]; then
     echo "No T4 GPUs available in $REGION region"
     exit 1
   fi
-  
+
   echo "Creating GPU GKE cluster in $T4_ZONE..."
   START_TIME=$(date +%s)
   
