@@ -87,15 +87,28 @@ else
 fi
 
 # ─── Step 2: Grant Cloud Build SA permission to push to Artifact Registry ────
+# NOTE: Projects created after April 2024 use the Compute Engine default SA
+# as the Cloud Build runner instead of the legacy @cloudbuild SA. We grant
+# both to cover all project ages.
 echo
 echo "▶ Step 2: Granting Cloud Build service account Artifact Registry access..."
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
+
+# Legacy Cloud Build SA (projects before April 2024)
 CLOUDBUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
 gcloud projects add-iam-policy-binding "$PROJECT_ID" \
   --member="serviceAccount:${CLOUDBUILD_SA}" \
   --role="roles/artifactregistry.writer" \
   --quiet > /dev/null
-echo "  ✔ Granted roles/artifactregistry.writer to ${CLOUDBUILD_SA}."
+echo "  ✔ Granted to ${CLOUDBUILD_SA}"
+
+# Compute Engine default SA (new projects after April 2024)
+COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${COMPUTE_SA}" \
+  --role="roles/artifactregistry.writer" \
+  --quiet > /dev/null
+echo "  ✔ Granted to ${COMPUTE_SA}"
 
 # ─── Step 3: Build & push via Cloud Build ────────────────────────────────────
 echo
