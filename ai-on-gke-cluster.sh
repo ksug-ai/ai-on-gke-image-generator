@@ -1,25 +1,61 @@
 #!/bin/bash
 set -e
 
-# Set the project ID and region
-PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
+# Set the region
 REGION="${GCP_REGION:-us-central1}"
 
-# Validate project
-if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "(unset)" ]; then
-  echo "❌ No GCP project set. Please configure your project first:"
-  echo
-  echo "    gcloud config set project YOUR_PROJECT_ID"
-  echo
-  echo "  Or pass it inline:"
-  echo
-  echo "    GCP_PROJECT_ID=YOUR_PROJECT_ID $0 $*"
-  echo
+# ─── Select GCP Project ───────────────────────────────────────────────────────
+echo "Fetching your GCP projects..."
+mapfile -t PROJECTS < <(gcloud projects list --format="value(projectId)" 2>/dev/null)
+
+if [ ${#PROJECTS[@]} -eq 0 ]; then
+  echo "❌ No GCP projects found. Make sure you are authenticated:"
+  echo "    gcloud auth login"
   exit 1
 fi
 
+# Determine the default: prefer GCP_PROJECT_ID env var, then active gcloud project
+DEFAULT_PROJECT="${GCP_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
+DEFAULT_IDX=1
+for i in "${!PROJECTS[@]}"; do
+  if [ "${PROJECTS[$i]}" = "$DEFAULT_PROJECT" ]; then
+    DEFAULT_IDX=$((i+1))
+    break
+  fi
+done
+
+echo
+echo "Available GCP projects:"
+for i in "${!PROJECTS[@]}"; do
+  if [ "${PROJECTS[$i]}" = "$DEFAULT_PROJECT" ]; then
+    printf "  [%d] %s  ← default\n" "$((i+1))" "${PROJECTS[$i]}"
+  else
+    printf "  [%d] %s\n" "$((i+1))" "${PROJECTS[$i]}"
+  fi
+done
+echo
+
+while true; do
+  read -rp "Select a project [${DEFAULT_IDX}]: " SELECTION
+  SELECTION="${SELECTION:-$DEFAULT_IDX}"
+  if [[ "$SELECTION" =~ ^[0-9]+$ ]] && [ "$SELECTION" -ge 1 ] && [ "$SELECTION" -le "${#PROJECTS[@]}" ]; then
+    PROJECT_ID="${PROJECTS[$((SELECTION-1))]}"
+    break
+  fi
+  echo "  ⚠️  Invalid selection. Enter a number between 1 and ${#PROJECTS[@]}."
+done
+
+echo
+echo "  Selected project: $PROJECT_ID"
+read -rp "  Confirm? [Y/n]: " CONFIRM
+CONFIRM="${CONFIRM:-Y}"
+if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+  echo "Aborted."
+  exit 0
+fi
+
 echo "Setting GCP project to $PROJECT_ID..."
-gcloud config set project $PROJECT_ID
+gcloud config set project "$PROJECT_ID"
 
 # Get first available T4 zone (only needed for gpu/check)
 T4_ZONE=$(gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="value(zone)" | head -1)
