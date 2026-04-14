@@ -33,6 +33,32 @@ Next, you need a GKE cluster with GPU nodes. You can create one using the provid
 ```
 Once the cluster is created, you are ready to proceed with the setup.
 
+## ⚠️ GPU Quota Pre-check
+
+Google Cloud projects typically start with **zero** GPU quota. Before running the GPU script, you must ensure you have enough quota in your region (e.g., `us-central1`).
+
+### 1. Check your current Quota (CLI)
+Run this command to see your T4 GPU quota:
+
+```bash
+gcloud compute regions describe us-central1 \
+    --flatten="quotas" \
+    --format="table(quotas.metric, quotas.limit, quotas.usage)" | grep "NVIDIA_T4_GPUS"
+```
+
+If the `LIMIT` is `0.0`, you **must** request an increase.
+
+### 2. Requesting an Increase (Web Console)
+1. Go to **[IAM & Admin > Quotas](https://console.cloud.google.com/iam-admin/quotas)**.
+2. Filter by `Metric: nvidia.com/t4_gpus`.
+3. Select the region (e.g., `us-central1`).
+4. Click **EDIT QUOTAS** at the top.
+5. Enter the new limit (e.g., `1`) and submit.
+
+> [!NOTE]
+> GPU quotas are **not available** on the Google Cloud Free Trial ($300 credit). You must upgrade to a "Paid" account (though you will still have your remaining credits).
+
+
 ## 🛠 Setup
 
 ### 1. Build & Push the Docker Image

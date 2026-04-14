@@ -14,6 +14,11 @@ ZONE="${T4_ZONE:-${REGION}-b}"
 check_gpu_availability() {
   echo "Checking T4 GPU availability in $REGION..."
   gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="table(zone)"
+  
+  echo -e "\nChecking GPU Quota in $REGION..."
+  gcloud compute regions describe "$REGION" \
+    --flatten="quotas" \
+    --format="table(quotas.metric, quotas.limit, quotas.usage)" | grep "NVIDIA_T4_GPUS"
 }
 
 start_cpu() {
