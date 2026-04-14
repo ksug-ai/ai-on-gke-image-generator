@@ -2,12 +2,25 @@
 set -e
 
 # ─── Configuration ────────────────────────────────────────────────────────────
-PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project)}"
+PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
 REGION="${GCP_REGION:-us-central1}"
 REPO="ai-image-generator"
 IMAGE="ai-image-generator"
 TAG="latest"
 IMAGE_PATH="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${IMAGE}:${TAG}"
+
+# ─── Validate project ─────────────────────────────────────────────────────────
+if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "(unset)" ]; then
+  echo "❌ No GCP project set. Please configure your project first:"
+  echo
+  echo "    gcloud config set project YOUR_PROJECT_ID"
+  echo
+  echo "  Or pass it inline:"
+  echo
+  echo "    GCP_PROJECT_ID=YOUR_PROJECT_ID ./setup.sh"
+  echo
+  exit 1
+fi
 
 echo "============================================"
 echo "  AI on GKE - Setup Script"

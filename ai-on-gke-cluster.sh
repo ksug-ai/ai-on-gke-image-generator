@@ -2,8 +2,22 @@
 set -e
 
 # Set the project ID and region
-PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project)}"
+PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
 REGION="${GCP_REGION:-us-central1}"
+
+# Validate project
+if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "(unset)" ]; then
+  echo "❌ No GCP project set. Please configure your project first:"
+  echo
+  echo "    gcloud config set project YOUR_PROJECT_ID"
+  echo
+  echo "  Or pass it inline:"
+  echo
+  echo "    GCP_PROJECT_ID=YOUR_PROJECT_ID $0 $*"
+  echo
+  exit 1
+fi
+
 echo "Setting GCP project to $PROJECT_ID..."
 gcloud config set project $PROJECT_ID
 
