@@ -11,17 +11,19 @@ This is a hands-on workshop python app that runs **Stable Diffusion** on **Googl
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed on your machine:
-- **[Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (`gcloud`)**
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)** (required for building the container image)
+This workshop uses **[Google Cloud Shell](https://shell.cloud.google.com)** — a free, browser-based terminal that comes pre-installed with `gcloud`, `kubectl`, `docker`, and `git`, and is already authenticated to your Google Cloud project. No local setup required.
 
-Make sure your Google Cloud SDK is initialized so `gcloud` points to your GCP project:
+> [!TIP]
+> Open Cloud Shell by clicking the **Activate Cloud Shell** button (>_) in the top-right corner of the [Google Cloud Console](https://console.cloud.google.com), or go directly to [shell.cloud.google.com](https://shell.cloud.google.com).
+
+Clone the repository and navigate into the directory:
 
 ```bash
-gcloud init
+git clone https://github.com/ksug-ai/ai-on-gke-image-generator.git
+cd ai-on-gke-image-generator
 ```
 
-Next, you need a GKE cluster with GPU nodes. You can create one using the provided script:
+Next, create a GKE cluster with GPU nodes using the provided script:
 
 ```bash
 ./ai-on-gke-cluster.sh gpu
