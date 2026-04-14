@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ai-image-generator
-        image: us-docker.pkg.dev/ai-on-gke-image-generator/ai-image-generator/ai-image-generator:latest
+        image: us-central1-docker.pkg.dev/ai-on-gke-image-generator/ai-image-generator/ai-image-generator:latest
         resources:
           requests:
             nvidia.com/gpu: 1
