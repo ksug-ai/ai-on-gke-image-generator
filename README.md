@@ -23,18 +23,6 @@ git clone https://github.com/ksug-ai/ai-on-gke-image-generator.git
 cd ai-on-gke-image-generator
 ```
 
-Next, create a GKE cluster with GPU nodes using the provided script:
-
-```bash
-./ai-on-gke-cluster.sh gpu
-```
-
-**Optional: Create a CPU-based GKE cluster:**
-```bash
-./ai-on-gke-cluster.sh cpu
-```
-Once the cluster is created, you are ready to proceed with the setup.
-
 ## ⚠️ GPU Quota Pre-check
 
 Google Cloud projects typically start with **zero** GPU quota. Before running the GPU script, you must ensure you have enough quota in your chosen region.
@@ -80,7 +68,9 @@ On each page:
 
 ## 🛠 Setup
 
-The `setup.sh` script automates everything — creating the Artifact Registry repository, building and pushing the Docker image, and patching the Kubernetes YAML files with your project and region.
+### Step 1 — Build & Push the Docker Image
+
+Run `setup.sh` to create the Artifact Registry repository, build the Docker image, push it, and patch the Kubernetes YAML files — all in one command:
 
 ```bash
 ./setup.sh
@@ -92,16 +82,30 @@ By default it uses your active `gcloud` project and region `us-central1`. Overri
 GCP_PROJECT_ID=my-project GCP_REGION=australia-southeast1 ./setup.sh
 ```
 
-### Deploy to GKE
+### Step 2 — Create the GKE Cluster
+
+Once the image is pushed, create a GKE cluster with GPU nodes:
+
+```bash
+./ai-on-gke-cluster.sh gpu
+```
+
+**Optional: Create a CPU-based GKE cluster instead:**
+```bash
+./ai-on-gke-cluster.sh cpu
+```
+
+### Step 3 — Deploy to GKE
+
 ```bash
 kubectl apply -f k8s/gpu-deployment.yaml
 ```
-
 
 Get external IP and open in browser:
 ```bash
 echo "http://$(kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 ```
+
 
 Click the URL above and try:  
 👉 "A kubestronaut riding a dragon in space"
