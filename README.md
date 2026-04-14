@@ -39,8 +39,10 @@ Once the cluster is created, you are ready to proceed with the setup.
 
 Google Cloud projects typically start with **zero** GPU quota. Before running the GPU script, you must ensure you have enough quota in your chosen region.
 
+> [!IMPORTANT]
+> The cluster script uses **Spot (preemptible) VMs** (`--spot`), which have a **separate quota** from regular VMs. You need to check and request **both** if they are at `0.0`.
+
 ### 1. Check your current Quota (CLI)
-Run this command to see your T4 GPU quota:
 
 ```bash
 REGION=us-central1  # change this if using a different region
@@ -49,14 +51,28 @@ gcloud compute regions describe $REGION \
     --format="table(quotas.metric, quotas.limit, quotas.usage)" | grep "NVIDIA_T4_GPUS"
 ```
 
-If the `LIMIT` is `0.0`, you **must** request an increase.
+This will show two relevant rows:
+
+| Metric | Used for |
+|---|---|
+| `NVIDIA_T4_GPUS` | Regular (on-demand) VMs |
+| `PREEMPTIBLE_NVIDIA_T4_GPUS` | Spot / preemptible VMs (`--spot`) ← **this one** |
+
+If either `LIMIT` is `0.0`, you must request an increase before proceeding.
 
 ### 2. Requesting an Increase (Web Console)
-1. Go to **[IAM & Admin > Quotas](https://console.cloud.google.com/iam-admin/quotas)**.
-2. Filter by `Metric: nvidia.com/t4_gpus`.
-3. Select your region (matching the `$REGION` you set above).
-4. Click **EDIT QUOTAS** at the top.
-5. Enter the new limit (e.g., `1`) and submit.
+
+> [!NOTE]
+> GPU quota increases **cannot be done via CLI** — they require Google's human review and approval (typically within a few hours). Use the direct links below to skip the navigation steps.
+
+👉 **[Request Preemptible T4 GPU Quota](https://console.cloud.google.com/iam-admin/quotas?service=compute.googleapis.com&metric=compute.googleapis.com%2Fpreemptible_nvidia_t4_gpus)** ← needed for `--spot`
+
+👉 **[Request On-demand T4 GPU Quota](https://console.cloud.google.com/iam-admin/quotas?service=compute.googleapis.com&metric=compute.googleapis.com%2Fnvidia_t4_gpus)** ← needed if removing `--spot`
+
+On each page:
+1. Select your region from the list.
+2. Click **EDIT QUOTAS** and enter `1` as the new limit.
+3. Submit — approval is usually granted within a few hours.
 
 > [!NOTE]
 > GPU quotas are **not available** on the Google Cloud Free Trial ($300 credit). You must upgrade to a "Paid" account (though you will still have your remaining credits).
