@@ -76,8 +76,8 @@ Then, build and push your image:
 
 ```bash
 PROJECT_ID=$(gcloud config get-value project)
-docker build -t us-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest .
-docker push us-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest
+docker build -t us-central1-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest .
+docker push us-central1-docker.pkg.dev/$PROJECT_ID/ai-image-generator/ai-image-generator:latest
 ```
 
 **Important:** Before moving to the next step, you must update the image reference in the deployment YAML files (`k8s/gpu-deployment.yaml` and `k8s/deployment.yaml`) to match your `$PROJECT_ID`. Change `ai-on-gke-image-generator` in the image path to your actual project ID.
