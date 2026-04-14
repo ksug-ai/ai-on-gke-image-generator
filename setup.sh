@@ -33,7 +33,7 @@ echo
 
 # ─── Step 0: Enable required APIs ────────────────────────────────────────────
 echo "▶ Step 0: Enabling required Google Cloud APIs..."
-gcloud services enable artifactregistry.googleapis.com --quiet
+gcloud services enable artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet
 echo "  ✔ APIs enabled."
 
 # ─── Step 1: Create Artifact Registry repository (skip if exists) ─────────────
@@ -49,22 +49,15 @@ else
   echo "  ✔ Repository created."
 fi
 
-# ─── Step 2: Configure Docker auth for Artifact Registry ─────────────────────
+# ─── Step 2: Build & push via Cloud Build ────────────────────────────────────
 echo
-echo "▶ Step 2: Configuring Docker authentication..."
-gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
-echo "  ✔ Docker auth configured."
-
-# ─── Step 3: Build & push the Docker image ───────────────────────────────────
-echo
-echo "▶ Step 3: Building Docker image..."
-docker build -t "$IMAGE_PATH" .
-echo "  ✔ Build complete."
-
-echo
-echo "▶ Step 4: Pushing image to Artifact Registry..."
-docker push "$IMAGE_PATH"
-echo "  ✔ Push complete."
+echo "▶ Step 2: Building and pushing image via Cloud Build..."
+echo "  (builds and pushes entirely within GCP — no local Docker push needed)"
+gcloud builds submit \
+  --tag "$IMAGE_PATH" \
+  --machine-type=e2-highcpu-8 \
+  .
+echo "  ✔ Build and push complete."
 
 # ─── Step 5: Patch the Kubernetes YAML files ─────────────────────────────────
 echo
