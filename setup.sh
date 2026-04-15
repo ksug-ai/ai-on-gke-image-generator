@@ -7,6 +7,27 @@ REPO="ai-image-generator"
 IMAGE="ai-image-generator"
 TAG="latest"
 
+retry_command() {
+  local max_attempts="$1"
+  local delay_seconds="$2"
+  shift 2
+
+  local attempt=1
+  while true; do
+    if "$@"; then
+      return 0
+    fi
+
+    if [ "$attempt" -ge "$max_attempts" ]; then
+      return 1
+    fi
+
+    echo "  ⚠️  Attempt ${attempt}/${max_attempts} failed. Retrying in ${delay_seconds}s..."
+    sleep "$delay_seconds"
+    attempt=$((attempt + 1))
+  done
+}
+
 # ─── Select GCP Project ───────────────────────────────────────────────────────
 echo "Fetching your GCP projects..."
 mapfile -t PROJECTS < <(gcloud projects list --format="value(projectId)" 2>/dev/null)
@@ -58,6 +79,11 @@ if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
 fi
 
 IMAGE_PATH="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${IMAGE}:${TAG}"
+USE_CLOUD_BUILD_ONLY="${USE_CLOUD_BUILD:-0}"
+
+if [ -n "${CLOUD_SHELL:-}" ]; then
+  USE_CLOUD_BUILD_ONLY=1
+fi
 
 echo "============================================"
 echo "  AI on GKE - Setup Script"
@@ -70,7 +96,7 @@ echo
 
 # ─── Step 0: Enable required APIs ────────────────────────────────────────────
 echo "▶ Step 0: Enabling required Google Cloud APIs..."
-gcloud services enable compute.googleapis.com artifactregistry.googleapis.com --quiet
+gcloud services enable compute.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet
 echo "  ✔ APIs enabled."
 
 # ─── Step 1: Create Artifact Registry repository (skip if exists) ─────────────
@@ -88,19 +114,31 @@ fi
 
 # ─── Step 2: Configure Docker auth & build + push image ──────────────────────
 echo
-echo "▶ Step 2: Configuring Docker authentication for Artifact Registry..."
-gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
-echo "  ✔ Docker configured."
+if [ "$USE_CLOUD_BUILD_ONLY" = "1" ]; then
+  echo "▶ Step 2-4: Building and pushing image with Cloud Build..."
+  gcloud builds submit --tag "$IMAGE_PATH" .
+  echo "  ✔ Cloud Build push complete."
+else
+  echo "▶ Step 2: Configuring Docker authentication for Artifact Registry..."
+  gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+  echo "  ✔ Docker configured."
 
-echo
-echo "▶ Step 3: Building Docker image..."
-docker build -t "$IMAGE_PATH" .
-echo "  ✔ Build complete."
+  echo
+  echo "▶ Step 3: Building Docker image..."
+  docker build -t "$IMAGE_PATH" .
+  echo "  ✔ Build complete."
 
-echo
-echo "▶ Step 4: Pushing image to Artifact Registry..."
-docker push "$IMAGE_PATH"
-echo "  ✔ Push complete."
+  echo
+  echo "▶ Step 4: Pushing image to Artifact Registry..."
+  if retry_command 3 5 docker push "$IMAGE_PATH"; then
+    echo "  ✔ Push complete."
+  else
+    echo "  ⚠️  Local docker push failed after 3 attempts."
+    echo "  ▶ Falling back to Cloud Build..."
+    gcloud builds submit --tag "$IMAGE_PATH" .
+    echo "  ✔ Cloud Build push complete."
+  fi
+fi
 
 # ─── Step 5: Patch the Kubernetes YAML files ─────────────────────────────────
 echo
