@@ -109,17 +109,74 @@ start_gpu() {
 }
 
 list() {
-  echo "Listing all clusters..."
-  gcloud container clusters list --format="table(name,location,status)"
+  echo "Listing clusters in active project: $PROJECT_ID"
+
+  local rows
+  rows=$(gcloud container clusters list --project="$PROJECT_ID" --format="value(name,location,status)" 2>/dev/null || true)
+
+  if [ -n "$rows" ]; then
+    printf "%-35s %-20s %-12s %-20s\n" "PROJECT" "NAME" "LOCATION" "STATUS"
+    printf "%-35s %-20s %-12s %-20s\n" "-------" "----" "--------" "------"
+    while IFS=$'\t' read -r name location status; do
+      [ -z "$name" ] && continue
+      printf "%-35s %-20s %-12s %-20s\n" "$PROJECT_ID" "$name" "$location" "$status"
+    done <<< "$rows"
+    return
+  fi
+
+  echo "No clusters found in active project. Searching other accessible projects..."
+  local found_any=0
+  printf "%-35s %-20s %-12s %-20s\n" "PROJECT" "NAME" "LOCATION" "STATUS"
+  printf "%-35s %-20s %-12s %-20s\n" "-------" "----" "--------" "------"
+
+  while read -r project; do
+    [ -z "$project" ] && continue
+    [ "$project" = "$PROJECT_ID" ] && continue
+
+    local other_rows
+    other_rows=$(gcloud container clusters list --project="$project" --format="value(name,location,status)" 2>/dev/null || true)
+    if [ -z "$other_rows" ]; then
+      continue
+    fi
+
+    found_any=1
+    while IFS=$'\t' read -r name location status; do
+      [ -z "$name" ] && continue
+      printf "%-35s %-20s %-12s %-20s\n" "$project" "$name" "$location" "$status"
+    done <<< "$other_rows"
+  done < <(gcloud projects list --format="value(projectId)" 2>/dev/null || true)
+
+  if [ "$found_any" -eq 0 ]; then
+    echo "No GKE clusters found in any accessible project."
+  else
+    echo
+    echo "Tip: set GCP_PROJECT_ID to the project that contains your cluster before running this script."
+  fi
 }
 
 stop() {
-  echo "Deleting clusters..."
-  # Get all existing clusters matching the pattern and delete them
-  gcloud container clusters list --filter="name ~ ai-on-gke-image-cluster" --format="value(name,location)" | while read -r name location; do
-    gcloud container clusters delete "$name" --location="$location" --quiet
-  done
-  echo "Clusters deleted successfully!"
+  echo "Deleting managed clusters in project: $PROJECT_ID"
+
+  local found_any=0
+  local rows
+  rows=$(gcloud container clusters list --project="$PROJECT_ID" --format="value(name,location)" 2>/dev/null || true)
+
+  while IFS=$'\t' read -r name location; do
+    [ -z "$name" ] && continue
+    case "$name" in
+      ai-on-gke-image-cluster|ai-on-gke-image-cluster-gpu)
+        found_any=1
+        echo "Deleting cluster: $name ($location)"
+        gcloud container clusters delete "$name" --project="$PROJECT_ID" --location="$location" --quiet
+        ;;
+    esac
+  done <<< "$rows"
+
+  if [ "$found_any" -eq 0 ]; then
+    echo "No managed clusters found to delete."
+  else
+    echo "Managed clusters deleted successfully!"
+  fi
 }
 
 case "$1" in
