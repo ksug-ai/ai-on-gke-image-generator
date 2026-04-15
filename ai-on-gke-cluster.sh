@@ -19,12 +19,31 @@ ZONE="${T4_ZONE:-${REGION}-b}"
 
 check_gpu_availability() {
   echo "Checking T4 GPU availability in $REGION..."
-  gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="table(zone)"
-  
-  echo -e "\nChecking GPU Quota in $REGION..."
+  ZONES=$(gcloud compute accelerator-types list \
+    --filter="name:nvidia-tesla-t4 AND zone~${REGION}" \
+    --format="value(zone)" | sort -u)
+  if [ -z "$ZONES" ]; then
+    echo "  ❌ No T4 GPUs found in $REGION"
+  else
+    echo "  ✔ T4 GPUs available in zones:"
+    echo "$ZONES" | sed 's/^/    /'
+  fi
+
+  echo
+  echo "Checking GPU Quota in $REGION..."
+  printf "  %-40s %8s %8s\n" "METRIC" "LIMIT" "USAGE"
+  printf "  %-40s %8s %8s\n" "------" "-----" "-----"
   gcloud compute regions describe "$REGION" \
     --flatten="quotas" \
-    --format="table(quotas.metric, quotas.limit, quotas.usage)" | grep "NVIDIA_T4_GPUS"
+    --format="value(quotas.metric, quotas.limit, quotas.usage)" \
+    | grep "NVIDIA_T4_GPUS" \
+    | while IFS=$'\t' read -r metric limit usage; do
+        printf "  %-40s %8s %8s\n" "$metric" "$limit" "$usage"
+        if [[ "$limit" == "0.0" || "$limit" == "0" ]]; then
+          echo "  ⚠️  $metric limit is 0 — request a quota increase at:"
+          echo "      https://console.cloud.google.com/iam-admin/quotas"
+        fi
+      done
 }
 
 start_cpu() {
