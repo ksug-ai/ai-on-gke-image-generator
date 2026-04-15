@@ -106,6 +106,8 @@ Get external IP and open in browser:
 echo "http://$(kubectl get svc ai-image-generator-gpu-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 ```
 
+> [!NOTE]
+> It may take a few minutes for the external IP to be assigned and become reachable after the service is created.
 
 Click the URL above and try:  
 👉 "A kubestronaut riding a dragon in space"
@@ -122,6 +124,9 @@ Get external IP and open in browser:
 ```bash
 echo "http://$(kubectl get svc ai-image-generator-svc -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 ```
+
+> [!NOTE]
+> It may take a few minutes for the external IP to be assigned and become reachable after the service is created.
 
 ## 🌍 Demo Ideas
 - Show scaling with:
