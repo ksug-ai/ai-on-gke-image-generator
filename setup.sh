@@ -78,6 +78,9 @@ if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
   exit 0
 fi
 
+echo "  Setting gcloud project to: $PROJECT_ID"
+gcloud config set project "$PROJECT_ID" --quiet >/dev/null
+
 IMAGE_PATH="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${IMAGE}:${TAG}"
 USE_CLOUD_BUILD_ONLY="${USE_CLOUD_BUILD:-0}"
 
@@ -96,18 +99,19 @@ echo
 
 # ─── Step 0: Enable required APIs ────────────────────────────────────────────
 echo "▶ Step 0: Enabling required Google Cloud APIs..."
-gcloud services enable compute.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet
+gcloud services enable compute.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com --project="$PROJECT_ID" --quiet
 echo "  ✔ APIs enabled."
 
 # ─── Step 1: Create Artifact Registry repository (skip if exists) ─────────────
 echo
 echo "▶ Step 1: Creating Artifact Registry repository..."
-if gcloud artifacts repositories describe "$REPO" --location="$REGION" --quiet &>/dev/null; then
+if gcloud artifacts repositories describe "$REPO" --location="$REGION" --project="$PROJECT_ID" --quiet &>/dev/null; then
   echo "  ✔ Repository '$REPO' already exists, skipping."
 else
   gcloud artifacts repositories create "$REPO" \
     --repository-format=docker \
     --location="$REGION" \
+    --project="$PROJECT_ID" \
     --description="AI Image Generator repository"
   echo "  ✔ Repository created."
 fi
@@ -116,7 +120,7 @@ fi
 echo
 if [ "$USE_CLOUD_BUILD_ONLY" = "1" ]; then
   echo "▶ Step 2-4: Building and pushing image with Cloud Build..."
-  gcloud builds submit --tag "$IMAGE_PATH" .
+  gcloud builds submit --project="$PROJECT_ID" --tag "$IMAGE_PATH" .
   echo "  ✔ Cloud Build push complete."
 else
   echo "▶ Step 2: Configuring Docker authentication for Artifact Registry..."
@@ -135,7 +139,7 @@ else
   else
     echo "  ⚠️  Local docker push failed after 3 attempts."
     echo "  ▶ Falling back to Cloud Build..."
-    gcloud builds submit --tag "$IMAGE_PATH" .
+    gcloud builds submit --project="$PROJECT_ID" --tag "$IMAGE_PATH" .
     echo "  ✔ Cloud Build push complete."
   fi
 fi
