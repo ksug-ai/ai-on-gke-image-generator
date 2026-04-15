@@ -70,7 +70,7 @@ echo
 
 # ─── Step 0: Enable required APIs ────────────────────────────────────────────
 echo "▶ Step 0: Enabling required Google Cloud APIs..."
-gcloud services enable compute.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com --quiet
+gcloud services enable compute.googleapis.com artifactregistry.googleapis.com --quiet
 echo "  ✔ APIs enabled."
 
 # ─── Step 1: Create Artifact Registry repository (skip if exists) ─────────────
@@ -86,43 +86,25 @@ else
   echo "  ✔ Repository created."
 fi
 
-# ─── Step 2: Grant Cloud Build SA permission to push to Artifact Registry ────
-# NOTE: Projects created after April 2024 use the Compute Engine default SA
-# as the Cloud Build runner instead of the legacy @cloudbuild SA. We grant
-# both to cover all project ages.
+# ─── Step 2: Configure Docker auth & build + push image ──────────────────────
 echo
-echo "▶ Step 2: Granting Cloud Build service account Artifact Registry access..."
-PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="value(projectNumber)")
+echo "▶ Step 2: Configuring Docker authentication for Artifact Registry..."
+gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+echo "  ✔ Docker configured."
 
-# Legacy Cloud Build SA (projects before April 2024)
-CLOUDBUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:${CLOUDBUILD_SA}" \
-  --role="roles/artifactregistry.writer" \
-  --quiet > /dev/null
-echo "  ✔ Granted to ${CLOUDBUILD_SA}"
-
-# Compute Engine default SA (new projects after April 2024)
-COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:${COMPUTE_SA}" \
-  --role="roles/artifactregistry.writer" \
-  --quiet > /dev/null
-echo "  ✔ Granted to ${COMPUTE_SA}"
-
-# ─── Step 3: Build & push via Cloud Build ────────────────────────────────────
 echo
-echo "▶ Step 3: Building and pushing image via Cloud Build..."
-echo "  (builds and pushes entirely within GCP — no local Docker push needed)"
-gcloud builds submit \
-  --tag "$IMAGE_PATH" \
-  --machine-type=e2-highcpu-8 \
-  .
-echo "  ✔ Build and push complete."
+echo "▶ Step 3: Building Docker image..."
+docker build -t "$IMAGE_PATH" .
+echo "  ✔ Build complete."
 
-# ─── Step 4: Patch the Kubernetes YAML files ─────────────────────────────────
 echo
-echo "▶ Step 4: Patching Kubernetes deployment YAML files..."
+echo "▶ Step 4: Pushing image to Artifact Registry..."
+docker push "$IMAGE_PATH"
+echo "  ✔ Push complete."
+
+# ─── Step 5: Patch the Kubernetes YAML files ─────────────────────────────────
+echo
+echo "▶ Step 5: Patching Kubernetes deployment YAML files..."
 for YAML_FILE in k8s/gpu-deployment.yaml k8s/deployment.yaml; do
   if [ -f "$YAML_FILE" ]; then
     sed -i.bak "s|PROJECT_ID|${PROJECT_ID}|g; s|us-central1-docker.pkg.dev|${REGION}-docker.pkg.dev|g" "$YAML_FILE"
