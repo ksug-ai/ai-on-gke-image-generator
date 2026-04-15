@@ -4,22 +4,62 @@ set -e
 # Set the region
 REGION="${GCP_REGION:-us-central1}"
 
-# ─── Resolve GCP Project (no interactive prompt — run setup.sh first) ─────────
-PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
-if [ -z "$PROJECT_ID" ]; then
-  echo "❌ No GCP project set. Run ./setup.sh first, or set GCP_PROJECT_ID."
-  exit 1
+# ─── Select GCP Project (same behavior as setup.sh) ──────────────────────────
+PROJECT_ID="${GCP_PROJECT_ID:-}"
+if [ -n "$PROJECT_ID" ]; then
+  echo "  Using project from GCP_PROJECT_ID: $PROJECT_ID"
+else
+  echo "Fetching your GCP projects..."
+  mapfile -t PROJECTS < <(gcloud projects list --format="value(projectId)" 2>/dev/null)
+
+  if [ ${#PROJECTS[@]} -eq 0 ]; then
+    echo "❌ No GCP projects found. Make sure you are authenticated:"
+    echo "    gcloud auth login"
+    exit 1
+  fi
+
+  DEFAULT_PROJECT="$(gcloud config get-value project 2>/dev/null)"
+  DEFAULT_IDX=1
+  for i in "${!PROJECTS[@]}"; do
+    if [ "${PROJECTS[$i]}" = "$DEFAULT_PROJECT" ]; then
+      DEFAULT_IDX=$((i+1))
+      break
+    fi
+  done
+
+  echo
+  echo "Available GCP projects:"
+  for i in "${!PROJECTS[@]}"; do
+    if [ "${PROJECTS[$i]}" = "$DEFAULT_PROJECT" ]; then
+      printf "  [%d] %s  ← default\n" "$((i+1))" "${PROJECTS[$i]}"
+    else
+      printf "  [%d] %s\n" "$((i+1))" "${PROJECTS[$i]}"
+    fi
+  done
+  echo
+
+  while true; do
+    read -rp "Select a project [${DEFAULT_IDX}]: " SELECTION
+    SELECTION="${SELECTION:-$DEFAULT_IDX}"
+    if [[ "$SELECTION" =~ ^[0-9]+$ ]] && [ "$SELECTION" -ge 1 ] && [ "$SELECTION" -le "${#PROJECTS[@]}" ]; then
+      PROJECT_ID="${PROJECTS[$((SELECTION-1))]}"
+      break
+    fi
+    echo "  ⚠️  Invalid selection. Enter a number between 1 and ${#PROJECTS[@]}."
+  done
 fi
-echo "  Using project: $PROJECT_ID"
+
+echo "  Setting gcloud project to: $PROJECT_ID"
 gcloud config set project "$PROJECT_ID" --quiet >/dev/null
 
 # Get first available T4 zone (only needed for gpu/check)
-T4_ZONE=$(gcloud compute accelerator-types list --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="value(zone)" | head -1)
+T4_ZONE=$(gcloud compute accelerator-types list --project="$PROJECT_ID" --filter="name:nvidia-tesla-t4 AND zone~${REGION}" --format="value(zone)" | head -1)
 ZONE="${T4_ZONE:-${REGION}-b}"
 
 check_gpu_availability() {
   echo "Checking T4 GPU availability in $REGION..."
   ZONES=$(gcloud compute accelerator-types list \
+    --project="$PROJECT_ID" \
     --filter="name:nvidia-tesla-t4 AND zone~${REGION}" \
     --format="value(zone)" | sort -u)
   if [ -z "$ZONES" ]; then
@@ -34,6 +74,7 @@ check_gpu_availability() {
   printf "  %-40s %8s %8s\n" "METRIC" "LIMIT" "USAGE"
   printf "  %-40s %8s %8s\n" "------" "-----" "-----"
   gcloud compute regions describe "$REGION" \
+    --project="$PROJECT_ID" \
     --flatten="quotas" \
     --format="value(quotas.metric, quotas.limit, quotas.usage)" \
     | grep "NVIDIA_T4_GPUS" \
@@ -48,11 +89,12 @@ check_gpu_availability() {
 
 start_cpu() {
   echo "Enabling required Google Cloud APIs..."
-  gcloud services enable compute.googleapis.com container.googleapis.com --quiet
+  gcloud services enable compute.googleapis.com container.googleapis.com --project="$PROJECT_ID" --quiet
   echo "Creating CPU GKE cluster in $ZONE..."
   START_TIME=$(date +%s)
   
   if ! gcloud container clusters create ai-on-gke-image-cluster \
+    --project="$PROJECT_ID" \
     --zone="$ZONE" \
     --num-nodes=1 \
     --machine-type=e2-standard-4 \
@@ -65,7 +107,7 @@ start_cpu() {
     exit 1
   fi
   
-  gcloud container clusters get-credentials ai-on-gke-image-cluster --zone="$ZONE"
+  gcloud container clusters get-credentials ai-on-gke-image-cluster --project="$PROJECT_ID" --zone="$ZONE"
   
   END_TIME=$(date +%s)
   DURATION=$((END_TIME - START_TIME))
@@ -76,7 +118,7 @@ start_cpu() {
 
 start_gpu() {
   echo "Enabling required Google Cloud APIs..."
-  gcloud services enable compute.googleapis.com container.googleapis.com --quiet
+  gcloud services enable compute.googleapis.com container.googleapis.com --project="$PROJECT_ID" --quiet
 
   if [ -z "$T4_ZONE" ]; then
     echo "No T4 GPUs available in $REGION region"
@@ -87,6 +129,7 @@ start_gpu() {
   START_TIME=$(date +%s)
   
   if ! gcloud container clusters create ai-on-gke-image-cluster-gpu \
+    --project="$PROJECT_ID" \
     --zone="$T4_ZONE" \
     --num-nodes=1 \
     --machine-type=n1-standard-4 \
@@ -99,7 +142,7 @@ start_gpu() {
     exit 1
   fi
   
-  gcloud container clusters get-credentials ai-on-gke-image-cluster-gpu --zone="$T4_ZONE"
+  gcloud container clusters get-credentials ai-on-gke-image-cluster-gpu --project="$PROJECT_ID" --zone="$T4_ZONE"
   
   END_TIME=$(date +%s)
   DURATION=$((END_TIME - START_TIME))
