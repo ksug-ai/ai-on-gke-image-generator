@@ -1,6 +1,7 @@
 name: Build and Push to GAR
 
-on: []  # disabled — build and push is handled via setup.sh / Cloud Build
+on:
+  workflow_dispatch:  # disabled — only runs if manually triggered; build and push is handled via setup.sh / Cloud Build
 
 jobs:
   build-and-push:
