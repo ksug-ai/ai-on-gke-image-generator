@@ -1,8 +1,6 @@
 name: Build and Push to GAR
 
-on:
-  push:
-    branches: ["main"]
+on: []  # disabled — build and push is handled via setup.sh / Cloud Build
 
 jobs:
   build-and-push:
