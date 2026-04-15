@@ -110,14 +110,14 @@ start_gpu() {
 
 list() {
   echo "Listing all clusters..."
-  gcloud container clusters list --format="table(name,zone,status)"
+  gcloud container clusters list --format="table(name,location,status)"
 }
 
 stop() {
   echo "Deleting clusters..."
   # Get all existing clusters matching the pattern and delete them
-  gcloud container clusters list --filter="name ~ ai-on-gke-image-cluster" --format="value(name,zone)" | while read -r name zone; do
-    gcloud container clusters delete "$name" --zone="$zone" --quiet
+  gcloud container clusters list --filter="name ~ ai-on-gke-image-cluster" --format="value(name,location)" | while read -r name location; do
+    gcloud container clusters delete "$name" --location="$location" --quiet
   done
   echo "Clusters deleted successfully!"
 }
