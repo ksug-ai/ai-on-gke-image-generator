@@ -28,25 +28,33 @@ cd ai-on-gke-image-generator
 Google Cloud projects typically start with **zero** GPU quota. Before running the GPU script, you must ensure you have enough quota in your chosen region.
 
 > [!IMPORTANT]
-> The cluster script uses **Spot (preemptible) VMs** (`--spot`), which have a **separate quota** from regular VMs. You need to check and request **both** if they are at `0.0`.
+> The cluster script uses **Spot (preemptible) VMs** (`--spot`), which have a **separate quota** from regular VMs. Google Cloud also requires the project-wide **GPUs (all regions)** quota. Check all applicable quotas and request increases for any that are at `0.0`.
 
 ### 1. Check your current Quota (CLI)
 
 ```bash
 REGION=us-central1  # change this if using a different region
-gcloud compute regions describe $REGION \
-    --flatten="quotas" \
-    --format="table(quotas.metric, quotas.limit, quotas.usage)" | grep "NVIDIA_T4_GPUS"
+
+# Check the regional T4 GPU quotas
+gcloud compute regions describe "$REGION" \
+    --format="json(quotas)" \
+    | jq '.quotas[] | select(.metric | contains("NVIDIA_T4_GPUS"))'
+
+# Check the project-wide GPU quota
+gcloud compute project-info describe \
+    --format="json(quotas)" \
+    | jq '.quotas[] | select(.metric == "GPUS_ALL_REGIONS")'
 ```
 
-This will show two relevant rows:
+This will show three relevant quotas:
 
 | Metric | Used for |
 |---|---|
 | `NVIDIA_T4_GPUS` | Regular (on-demand) VMs |
 | `PREEMPTIBLE_NVIDIA_T4_GPUS` | Spot / preemptible VMs (`--spot`) ← **this one** |
+| `GPUS_ALL_REGIONS` | Project-wide GPU usage across all regions |
 
-If either `LIMIT` is `0.0`, you must request an increase before proceeding.
+If the `limit` for any applicable quota is `0.0`, you must request an increase before proceeding. For this workshop's default Spot configuration, both `PREEMPTIBLE_NVIDIA_T4_GPUS` and `GPUS_ALL_REGIONS` must have sufficient quota.
 
 ### 2. Requesting an Increase (Web Console)
 
@@ -57,10 +65,15 @@ If either `LIMIT` is `0.0`, you must request an increase before proceeding.
 
 👉 **[Request On-demand T4 GPU Quota](https://console.cloud.google.com/iam-admin/quotas?service=compute.googleapis.com&metric=compute.googleapis.com%2Fnvidia_t4_gpus)** ← needed if removing `--spot`
 
-On each page:
+👉 **[Request GPUs (all regions) Quota](https://console.cloud.google.com/iam-admin/quotas?service=compute.googleapis.com&metric=compute.googleapis.com%2Fgpus_all_regions)** ← required in addition to the regional GPU quota
+
+For each regional quota page:
+
 1. Select your region from the list.
 2. Click **EDIT QUOTAS** and enter `1` as the new limit.
 3. Submit — approval is usually granted within a few hours.
+
+For **GPUs (all regions)**, select the project-wide quota (it has no region), click **EDIT QUOTAS**, enter `1`, and submit the request.
 
 > [!NOTE]
 > GPU quotas are **not available** on the Google Cloud Free Trial ($300 credit). You must upgrade to a "Paid" account (though you will still have your remaining credits).
