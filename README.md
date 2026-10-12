@@ -152,6 +152,46 @@ kubectl scale deployment ai-image-generator-cpu --replicas=2
 ```
 - Run multiple prompts at once to see Kubernetes distribute load.
 
+## 🧹 Clean Up
+
+To avoid incurring ongoing Google Cloud charges after completing the workshop, clean up the deployed resources:
+
+### 1. Delete Kubernetes Deployments & Services
+Delete the deployed application and remove the external LoadBalancer service:
+
+```bash
+# For GPU deployment
+kubectl delete -f k8s/gpu-deployment.yaml
+
+# For CPU deployment
+kubectl delete -f k8s/deployment.yaml
+```
+
+### 2. Delete the GKE Cluster
+Delete the GKE cluster using the management script:
+
+```bash
+./ai-on-gke-cluster.sh stop
+```
+
+Alternatively, delete the cluster manually using `gcloud`:
+
+```bash
+# For GPU cluster (replace ZONE with your cluster zone, e.g. us-central1-b)
+gcloud container clusters delete ai-on-gke-image-cluster-gpu --zone <ZONE> --quiet
+
+# For CPU cluster
+gcloud container clusters delete ai-on-gke-image-cluster --zone <ZONE> --quiet
+```
+
+### 3. Delete Artifact Registry Repository (Optional)
+If you no longer need the stored container image:
+
+```bash
+REGION=us-central1 # change if you used a different region
+gcloud artifacts repositories delete ai-image-generator --location="$REGION" --quiet
+```
+
 ## 🛠 Tech Stack
 
 **🤖 AI/ML:**
